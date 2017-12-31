@@ -8,9 +8,25 @@ var baseInfoDao = dependencyUtil.global.dao.baseInfoDao;
 var wealthInfoDao = dependencyUtil.global.dao.wealthInfoDao;
 var battleRecordDao = dependencyUtil.global.dao.battleRecordDao;
 var administratorDao = dependencyUtil.global.dao.administratorDao;
+var bullupWebDao = dependencyUtil.global.dao.bullupWebDao;
 
 exports.init = function () {
 
+}
+
+
+exports.handleBoradcast = function(io, socket){
+    socket.on("adminBroadcast", function(text){
+        io.sockets.emit('adminBroadcast',{
+            text: text
+        });
+    });
+}
+
+exports.handleCloseServer = function(io, socket){
+    socket.on("adminCloseServer", function(text){
+        io.sockets.emit('adminCloseServer',{});
+    });
 }
 
 //----------------------------提现管理部分--------------------------------
@@ -398,6 +414,35 @@ exports.handleInvitedCode = function (socket) {
                     errorCode: 0,
                     text: '查询成功,请刷新页面',
                     type: 'INVITEDCODERESULT',
+                    extension: {
+                        data:res
+                    }
+                });
+            }
+        });
+    });
+}
+
+//----------------------------查看官网统计--------------------------------
+/**
+ * 查询官网的pv,uv,ip
+ * @param socket
+*/
+exports.bullupWeb = function (socket) {
+    socket.on('getBullupWeb', function () {
+        bullupWebDao.findBullupWeb(function(res){
+            if (!res) {
+                socket.emit('feedback', {
+                    errorCode: 1,
+                    text: '查询失败，请稍后重试',
+                    type: 'BULLUPWEBRESULT',
+                    extension: null
+                });
+            } else {
+                 socket.emit('feedback', {
+                    errorCode: 0,
+                    text: '查询成功',
+                    type: 'BULLUPWEBRESULT',
                     extension: {
                         data:res
                     }

@@ -339,7 +339,7 @@ exports.handleBattleResult = function (io, socket){
                 //扣钱
                 for(var index in winTeam){
                     var player = winTeam[index];
-                    battleRecordDao.updateStrengthAndWealth(player.userId, player.strength.score + winScoreUpdateValue, resultPacket.rewardAmount);
+                    battleRecordDao.updateStrengthAndWealth(player.userId, player.strength.score + winScoreUpdateValue, 0.8 * resultPacket.rewardAmount);
                 }
                 for(var index in loseTeam){
                     var player = loseTeam[index];
@@ -451,7 +451,7 @@ exports.handleBattleResult = function (io, socket){
                 //扣钱
                 for(var index in winTeam){
                     var player = winTeam[index];
-                    battleRecordDao.updateStrengthAndWealth(player.userId, player.strength.score + winScoreUpdateValue, resultPacket.rewardAmount);
+                    battleRecordDao.updateStrengthAndWealth(player.userId, player.strength.score + winScoreUpdateValue, 0.8 * resultPacket.rewardAmount);
                 }
                 for(var index in loseTeam){
                     var player = loseTeam[index];
@@ -764,12 +764,16 @@ function broadCastMatchResult(firstTeam, secondTeam){
         socketService.userJoin(challengerTeam.participants[i].userId, battle.battleName);
         userService.changeUserStatus(challengerTeam.participants[i].userId, 'inbattle');
         userService.setEnvironment(challengerTeam.participants[i].userId, 'battle', battle);
+        //更新好友状态
+        userService.friendStatus(challengerTeam.participants[i].userId,'inbattle','true');
     }
     // 将受挑战队伍的所有用户加入到新的socket room
     for (var i in hostTeam.participants) {
         socketService.userJoin(hostTeam.participants[i].userId, battle.battleName);
         userService.changeUserStatus(hostTeam.participants[i].userId, 'inbattle');
         userService.setEnvironment(hostTeam.participants[i].userId, 'battle', battle);
+        //更新好友状态
+        userService.friendStatus(hostTeam.participants[i].userId,'inbattle','true');
     }
 
     console.log(JSON.stringify(userService.users));
@@ -948,7 +952,7 @@ function initFlipClocks(data){
     if(!flipClocks[data]){
         var obj = {
             curTime:new Date(),
-            time:180
+            time:300
         };
         flipClocks[data] = obj;
         console.log('this is 1:',JSON.stringify(flipClocks));

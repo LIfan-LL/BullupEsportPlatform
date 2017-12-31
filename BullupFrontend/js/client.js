@@ -1,6 +1,6 @@
 var io = require('socket.io-client');
 
-var socket = io.connect('http://49.140.81.199:3000');
+var socket = io.connect('http://18.221.98.48:3000');
 //var auto_script = require('./js/auto_program/lol_auto_script');
 var lol_process = require('./js/auto_program/lol_process.js');
 var lolUtil = require('./js/util/lol_util.js');
@@ -13,6 +13,11 @@ var versusLobbyInfo = null;
 var battleInfo = null;
 var formedTeams = null;
 var messageInfo = [];
+
+var match_timer = null;
+
+// 记录本次客户端已登陆用户，以及房间、队伍所在状态
+var prevInfo = [];
 
 var lastSocketStatus = null;
 var lastSocketId = null;
@@ -36,7 +41,8 @@ socket.on('feedback', function (feedback) {
             handleLoginResult(feedback);
             break;
         case 'REGISTERRESULT':
-            userInfo = handleRegistResult(feedback);
+            //userInfo = handleRegistResult(feedback);
+            handleRegistResult(feedback);
             break;
 
         case 'ESTABLISHROOMRESULT':
@@ -103,6 +109,10 @@ socket.on('feedback', function (feedback) {
         //--------查询提现信息-------------
         case 'SEARCHWITHDRAWRESULT':
             handleSearchWithdrawResult(feedback);
+            break;
+        //--------------查看官网前端数据-----------
+        case 'BULLUPWEBRESULT':
+            handleBullupWebResult(feedback);
             break;
         //--------同意提现-----------------
         case 'SETSTATUSTRUERESULT':
@@ -314,6 +324,7 @@ socket.on('teamInfoUpdate', function (data) {
             //console.log(roomInfo);
             if(roomInfo.gameMode == 'match'){
                 //bullup.alert("匹配中，请等待！");
+                roomInfo.status = "MATCHING";
                 teamInfo = roomInfo;
                 bullup.loadTemplateIntoTarget('swig_fightfor.html', {
                     'participants': roomInfo.participants
@@ -418,7 +429,7 @@ socket.on('lolRoomEstablish', function (lolRoom) {
         //-------------------我方---------敌方------
         bullup.generateRadar(dataArray1, dataArray2, labelArray, "战力对比", "teams-radar-chart");
         //handleTimeout(1000*60*3);
-        handleTimeout(1000*60*3);
+        handleTimeout(1000*60*5);
         var clock = $('.countdown-clock').FlipClock(lolRoom.time, {
             clockFace: 'MinuteCounter',
             countdown: true
@@ -544,7 +555,8 @@ socket.on('lolRoomEstablished', function (data) {
     if(userInfo.userId == battleInfo.blueSide.captain.userId){
         handleTimeout2(1000*60*90);
     }
-    isGameStart();       
+    isGameStart();
+    battleInfo.status = 'ready';       
     //userInfo.liseningResult = false;
     //}
     //userInfo.creatingRoom = false;
@@ -640,6 +652,7 @@ socket.on('battleResult', function(resultPacket){
         battleResultData.win = 1;
         battleResultData.gameLength = resultPacket.gameLength;
         battleResultData.rival_team = resultPacket.loseTeam;
+        battleResultData.wealth_change = 0.8 * resultPacket.rewardAmount;        
        
     }else{
         //输了
@@ -661,9 +674,9 @@ socket.on('battleResult', function(resultPacket){
         battleResultData.win = 0;
         battleResultData.gameLength = resultPacket.gameLength;
         battleResultData.rival_team = resultPacket.winTeam;
-       
+        battleResultData.wealth_change = resultPacket.rewardAmount;
+        
     }
-    battleResultData.wealth_change = resultPacket.rewardAmount;
     // console.log(JSON.stringify(battleResultData));
     socket.emit('updateKDA',{
         userId:userInfo.userId,
@@ -773,6 +786,7 @@ socket.on('updateRoomMember', function(updatedParticipants){
             //console.log(roomInfo);
             if(roomInfo.gameMode == 'match'){
                 //bullup.alert("匹配中，请等待！");
+                roomInfo.status = "MATCHING";                
                 teamInfo = roomInfo;
                 bullup.loadTemplateIntoTarget('swig_fightfor.html', {
                     'participants': roomInfo.participants
@@ -841,6 +855,7 @@ socket.on('updateTeamMember', function(updatedParticipants){
             //console.log(roomInfo);
             if(roomInfo.gameMode == 'match'){
                 //bullup.alert("匹配中，请等待！");
+                roomInfo.status = "MATCHING";                
                 teamInfo = roomInfo;
                 bullup.loadTemplateIntoTarget('swig_fightfor.html', {
                     'participants': roomInfo.participants
@@ -906,6 +921,16 @@ socket.on('EnvironmentRecover', function(environment){
     }
 });
 
+socket.on('adminBroadcast', function(text){
+    bullup.alert(text.text);
+});
+
+socket.on('adminCloseServer', function(){
+    socket.disconnect();
+    $(".g_bi").click();
+});
+
+
 /**
  * 处理用户登录
  * @param {*} feedback 
@@ -914,8 +939,17 @@ function handleLoginResult(feedback) {
     if (feedback.errorCode == 0) {
         // 登录成功
         //bullup.alert(feedback.text);
-        bullup.alert("登录成功!");
+        setTimeout(function(){
+            bullup.alert("登录成功!");      
+        },300);
         userInfo = feedback.extension;
+        if (prevInfo[userInfo.userId] != undefined) {
+            roomInfo = prevInfo[userInfo.userId][0];
+            teamInfo = prevInfo[userInfo.userId][1];
+        } else {
+            roomInfo = null;
+            teamInfo = null;
+        }
         // console.log("User info");
         // console.log(userInfo);
         //bullup.alert(userInfo.userRole);
@@ -928,16 +962,21 @@ function handleLoginResult(feedback) {
         $('#log_modal').modal('close');
         $('.modal-overlay').remove();
         $("#log_out_button").on('click', function(e){
-            bullup.alert('登出成功!');
-            $('#log_modal').modal('close');
-            e.preventDefault();
-            userInfo = null;
-            var temp = bullup.loadSwigView("./swig_menu.html", null);
-            // 打开
-            $("#log_modal").css("display", "block");
-            $('#system_menu').html(temp);
+            lol_process.grabLOLData('killProcess', null);
+            chrome.runtime.reload();
+            // bullup.alert('登出成功!');
+            // $('#log_modal').modal('close');
+            // e.preventDefault();
+            // prevInfo[userInfo.userId] = [roomInfo, teamInfo];
+            // userInfo = null;
+            
+            // //socket.disconnect();
+            // var temp = bullup.loadSwigView("./swig_menu.html", null);
+            // // 打开
+            // $("#log_modal").css("display", "block");
+            // $('#system_menu').html(temp);
 
-            $('#router_starter').click();
+            // $('#router_starter').click();
         });
         //回到对局
         if(battleInfo != null){
@@ -1056,6 +1095,51 @@ function handleSearchWithdrawResult(feedback){
     });
     $('#main-view').html(handleWithHtml);
 }
+
+//查看官网页面的pv,uv,ip
+function handleBullupWebResult(feedback){
+    var tempData = feedback.extension.data;
+        var day = [];
+        var ip = [];
+        var pv = [];
+        var uv = [];
+        for(var index in tempData){
+           day.push(tempData[index].day);
+           ip.push(tempData[index].ip);
+           pv.push(tempData[index].pv_count);
+           uv.push(tempData[index].uv_count);
+        }
+        var ctx = document.getElementById('myChart').getContext('2d');
+        var chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: day,
+                datasets: [{
+                    label: "ip",
+                    backgroundColor: 'rgba(255,255,255,0)',
+                    borderColor: 'rgb(255, 99, 132)',
+                    data: ip,
+                },
+                {
+                    label: "pv",
+                    backgroundColor: 'rgba(255,255,255,0)',
+                    borderColor: 'rgb(25, 200, 132)',
+                    data: pv,
+                },
+                {
+                    label: "uv",
+                    backgroundColor: 'rgba(255,255,255,0)',
+                    borderColor: 'rgb(25, 100, 12)',
+                    data: uv,
+                }
+            ]
+            },
+            options: {}
+        });
+
+
+}
+
 //将提现信息改为TRUE
 function handleWithdrawAgreeResult(feedback){
     bullup.alert(feedback.text);
@@ -1249,7 +1333,8 @@ function handleRoomEstablishmentResult(feedback){
     $("#confirm_create_team_btn").click(function(){
         //console.log(roomInfo);
         if(roomInfo.gameMode == 'match'){
-            //bullup.alert("匹配中，请等待！");
+            //bullup.alert("匹配中，请等待！");\
+            roomInfo.status = "MATCHING";            
             teamInfo = roomInfo;
             bullup.loadTemplateIntoTarget('swig_fightfor.html', {
                 'participants': roomInfo.participants
@@ -1281,9 +1366,10 @@ function handleTeamEstablishResult(feedback){
     socket.emit('tokenData', feedback.token);
     if(feedback.errorCode == 0){
         bullup.alert(feedback.text);
+        roomInfo.status = "PUBLISHING"; // 更改本地房间状态
         teamInfo = feedback.extension.teamInfo;
         formedTeams = feedback.extension.formedTeams;
-        delete formedTeams[teamInfo.roomName];
+        delete formedTeams[teamInfo.roomName];        
         page(formedTeams,1);//此函数在initial_pagination.js
     }else{
         bullup.alert(feedback.text);
@@ -1293,7 +1379,7 @@ function handleTeamEstablishResult(feedback){
 function handleRefreshFormedBattleRoomResult(feedback){
     if(feedback.errorCode == 0){
         formedTeams = feedback.extension.formedTeams;
-        delete formedTeams[teamInfo.roomName];
+        delete formedTeams[teamInfo.roomName];                
         page(formedTeams,1);//此函数在initial_pagination.js
     }else{
         bullup.alert(feedback.text);

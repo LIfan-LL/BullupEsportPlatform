@@ -89,9 +89,21 @@ $(document).ready(function(){
                 $('#component_collapsible').collapsible('open', 3);
                 $('#component_collapsible').collapsible('open', 4);
     
-            }else if(teamInfo != null){
-                page(formedTeams,1);//此函数在initial_pagination.js
-            }else if(roomInfo != null){
+            }else if(teamInfo != null && userInfo != null){
+                if (teamInfo.gameMode != 'match') {
+                    page(formedTeams, 1); //此函数在initial_pagination.js                                 
+                } else {
+                    // window.clearInterval(match_timer);
+                    bullup.loadTemplateIntoTarget('swig_fightfor.html', {
+                        'participants': roomInfo.participants
+                    }, 'main-view');
+                    var data = getRadarData(roomInfo.participants);
+                    console.log(data);
+                    var labelArray = ['击杀', '死亡', '助攻','治疗', '造成伤害', '承受伤害'];
+                    var dataArray1 = data;
+                    bullup.generateRadar(dataArray1, null, labelArray, "我方战力", "team-detail-chart");    
+                }
+            }else if(roomInfo != null && userInfo != null){
                 //回到房间页面
                 //处理空值
                 for(var index in roomInfo.participants){
@@ -127,12 +139,15 @@ $(document).ready(function(){
                 });
             
                 $("#confirm_create_team_btn").click(function(){
-                    if( roomInfo != null){
-                            alert("您已经创建队伍,不能重复创建队伍");
+                    if (roomInfo.status != "ESTABLISHING") {
+                        console.log(roomInfo);
+                        bullup.alert("您已经创建队伍,不能重复创建队伍");
                     }else{
                         
                         console.log(roomInfo);
                         if(roomInfo.gameMode == 'match'){
+                            roomInfo.status = "MATCHING";
+                            teamInfo = roomInfo;                            
                             if(roomInfo.captain.name != roomInfo.participants.name){
                             //bullup.alert("匹配中，请等待！");
                             bullup.loadTemplateIntoTarget('swig_fightfor.html', {

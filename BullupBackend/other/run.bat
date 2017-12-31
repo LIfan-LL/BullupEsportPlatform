@@ -1,2 +1,2 @@
-cd C:\Users\Administrator\Desktop\c\BullupEsportPlatform\BullupBackend  
+cd C:\Users\Administrator\Desktop\zuixin\BullupEsportPlatform\BullupBackend 
 node mailer.js

@@ -181,7 +181,7 @@ exports.updateStrengthAndWealth = function(userId, newStrengthScore, wealthChang
     dbUtil.createConnection(function(connection1){
         dbUtil.query(connection1, 'select bullup_currency_amount from bullup_wealth where user_id = ?', [userId], (err, res) => {
             if(err)throw err;
-            dbUtil.query(connection1, 'update bullup_wealth set bullup_currency_amount = ? where user_id = ?', [parseInt(res[0].bullup_currency_amount) + parseInt(wealthChangedValue), userId], (err, res)=>{
+            dbUtil.query(connection1, 'update bullup_wealth set bullup_currency_amount = ? where user_id = ?', [parseFloat(res[0].bullup_currency_amount) + parseFloat(wealthChangedValue), userId], (err, res)=>{
                 if(err)throw err;
                 dbUtil.closeConnection(connection1);
             });

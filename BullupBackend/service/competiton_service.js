@@ -87,7 +87,8 @@ exports.handleTeamEstablish = function (io, socket) {
         // 更新队伍信息状态
         teamInfo.status = 'PUBLISHING';
         // 将未形成队伍列表中的队伍放入已形成队伍列表中
-        exports.formedTeams[teamInfo.roomName] = teamInfo;
+        // 使用extend来避免指针丢失
+        exports.formedTeams[teamInfo.roomName] = $.extend({},teamInfo);
         // 将该队伍可以用来广播的内容加入到广播列表中
         //
         // exports.broadcastTeamInfos[teamInfo.roomName] = {

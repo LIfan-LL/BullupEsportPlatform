@@ -64,17 +64,17 @@
 		
       <div class="card battle-card grey darken-2" >
         <div class="card-content white-text" style="padding:15px;">
-          <div class="row">
+          <div class="row"  style="margin-bottom:10px;">
             <!-- teaser -->
             <div class="col s2">
               <img class="battle-teaser" src="./media/user_icon/{{ team.captain.avatarId }}.png">
             </div>
             <div class="col s10">
               <div class="row">
-                <span class="card-title r0ight" style="min-width: 290px;">
+                <span class="card-title r0ight" style="min-width: 290px;min-height: 64px;word-wrap: break-word;">
 									{{team.roomName}}
 								</span>
-                <div class="chip right" style="margin-top: -5px;">
+                <div class="chip right" style="position:absolute;margin-top: -5px;top:53px;left:327px;">
                   {{ team.teamParticipantsNum }}V{{ team.teamParticipantsNum }}
                 </div>
               </div>
@@ -86,11 +86,15 @@
         <div class="card-action" style="padding: 16px 15px;">
 					<a class="team_detail_btn" href="#team-detail-modal" id="{{ team.roomName }}_team_detail_btn" >发起挑战</a>
 					<!-- <a id="battle_team_details_btn">详情</a> -->
-          <a href="#">收藏</a>
+          <!-- <a href="#">收藏</a> -->
+					
+					<div class="chip right"  style="margin-top:-5px;">
+            <i class="fa fa-picture-o" aria-hidden="true"></i>{% if team.mapSelection=='map-selection-2' %}嚎哭深渊{% else %}召唤师峡谷{% endif %}
+					</div>
 
           <div class="chip right"  style="margin-top: -5px;">
             <i class="fa fa-gamepad" aria-hidden="true"></i>{% if team.winningCondition=='push-crystal' %}推掉水晶{% endif %}
-          </div>
+					</div>
           <div class="chip right" style="margin-top: -5px;">
             <i class="fa fa-money" aria-hidden="true"></i> {{ team.rewardAmount }}
           </div>

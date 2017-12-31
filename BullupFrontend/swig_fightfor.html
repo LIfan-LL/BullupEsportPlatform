@@ -82,7 +82,6 @@ function setData (data) {
     arr = data;
 }
 var $a =  $('#a1').val();
-match_timer = null;
 
  //添加事件
 $(function(){
@@ -92,8 +91,10 @@ $(function(){
     var count=0;
 
 //点击第二个按钮
+if (match_timer == null) {
+    match_timer = setInterval(show,10);
+}
 
-match_timer=setInterval(show,10)
 //生成时间
   function show(){
     ms++;
@@ -125,6 +126,7 @@ $('#cancelMatch').on('click',function(){
   //alert(JSON.stringify(roomInfo));
   //清除倒计时函数
   window.clearInterval(match_timer);
+  match_timer = null;
   socket.emit('cancelMatch',{
     $roomInfo:roomInfo
   });
